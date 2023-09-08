@@ -1,4 +1,4 @@
-from enum import Enum
+import re
 
 _types = {
     '0': int,
@@ -112,3 +112,14 @@ class DataBase:
             raise IndexError("Can't delete nothing")
 
         del self._rows[ind]
+
+    def keys(self, pattern: str):
+
+        res = []
+
+        for row in self._rows:
+            if re.match(pattern, row.getKey()):
+                res.append(row)
+
+        return res
+

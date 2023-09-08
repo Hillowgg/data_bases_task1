@@ -77,7 +77,7 @@ class DataBase:
         self._rows = []
 
     def connect(self):
-        file = open(self.path, 'rb')
+        file = open(self.path, 'r+')
         for row in file.readlines():
             self._rows += [Row(raw=row)]
 

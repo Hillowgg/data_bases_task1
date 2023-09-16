@@ -56,7 +56,7 @@ class Row:
         type_ = _types[raw[2]]
 
         self._key = raw[3:3 + key_len]
-        self._value = type_(raw[3 + key_len:])
+        self._value = type_(raw[3 + key_len:-1])
 
     def __str__(self):
         if not self._key:
@@ -67,7 +67,7 @@ class Row:
         len_ = len(self._key)
         type_ = _types[type(self._value)]
 
-        raw = f'{len_}{type_}{self._key}{self._value}'
+        raw = f'{len_:02}{type_}{self._key}{self._value}'
         return raw
 
 
@@ -77,9 +77,9 @@ class DataBase:
         self._rows = []
 
     def connect(self):
-        file = open(self.path, 'r+')
-        for row in file.readlines():
-            self._rows += [Row(raw=row)]
+        with open(self.path, 'r+') as f:
+            for row in f.readlines():
+                self._rows += [Row(raw=row)]
 
     def _findByKey(self, key: str) -> int:
         for i, row in enumerate(self._rows):
@@ -92,7 +92,8 @@ class DataBase:
         ind = self._findByKey(key)
         return self._rows[ind].getValue() if ind != -1 else None
 
-    def set(self, key: str, value: ValueType):
+    def set(self, key: str, *value: ValueType):
+        value = ' '.join(value)
         _checkValueType(value)
         _checkKey(key)
 
@@ -101,8 +102,10 @@ class DataBase:
 
         if ind != -1:
             self._rows[ind] = row
+            return 2
         else:
             self._rows.append(row)
+            return 1
 
     def delete(self, key: str):
         _checkKey(key)
@@ -112,14 +115,25 @@ class DataBase:
             raise IndexError("Can't delete nothing")
 
         del self._rows[ind]
+        return 1
 
     def keys(self, pattern: str):
 
         res = []
 
-        for row in self._rows:
-            if re.match(pattern, row.getKey()):
-                res.append(row)
+        try:
+            for row in self._rows:
+                if re.match(pattern, row.getKey()):
+                    res.append(row.getKey())
+        except re.error:
+            return "Wrong regex"
 
         return res
 
+    def exit(self):
+        with open(self.path, 'w') as f:
+            f.writelines([
+                str(row) + '\n' for row in self._rows
+            ])
+
+        return 'exiting...'
